@@ -1,0 +1,12 @@
+def show_menu():
+    print()
+    print("=" * 50)
+    print("         BOOKBUILDER")
+    print("=" * 50)
+    print()
+    print("1) Convert Book")
+    print("2) Settings")
+    print("3) Voices")
+    print("4) Exit")
+    print()
+    return input("Choice: ")
