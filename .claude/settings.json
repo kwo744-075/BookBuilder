@@ -15,7 +15,9 @@
       "Read(//usr/**)",
       "Bash(python3 -m pip install --user tkinterdnd2)",
       "Bash(python3 -m pip install --user --break-system-packages tkinterdnd2)",
-      "Bash(git tag *)"
+      "Bash(git tag *)",
+      "Bash(/home/mac/audiobook/venv/bin/edge-tts --list-voices)",
+      "Bash(awk '{print $1, $2}')"
     ]
   }
 }

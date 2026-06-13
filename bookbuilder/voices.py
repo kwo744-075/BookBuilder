@@ -1,11 +1,16 @@
 # Available narration voices, shared by the app and the Voice Studio.
 # Display name -> edge-tts voice id.
 VOICE_MAP = {
+    # Male
     "Eric": "en-US-EricNeural",
     "Andrew": "en-US-AndrewNeural",
     "Brian": "en-US-BrianNeural",
     "Christopher": "en-US-ChristopherNeural",
     "Ryan": "en-GB-RyanNeural",
+    # Female (Sonia is British / European)
+    "Aria": "en-US-AriaNeural",
+    "Jenny": "en-US-JennyNeural",
+    "Sonia": "en-GB-SoniaNeural",
 }
 
 # Default selection (matches the app's previous hardcoded voice).
