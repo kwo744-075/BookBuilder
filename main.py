@@ -1,7 +1,9 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from pathlib import Path
-import subprocess, threading, re, shutil
+import subprocess, threading, re
+
+from bookbuilder.engine import prepare_book, split_chapters
 
 BASE = Path.home() / "BookBuilder"
 OUT = BASE / "audiobooks"
@@ -25,35 +27,6 @@ progress = tk.IntVar(root, 0)
 def clean_title(path):
     return re.sub(r"[^a-zA-Z0-9 _.-]", "", Path(path).stem).strip()
 
-def split_chapters(txt_path, chapter_dir):
-    chapter_dir.mkdir(parents=True, exist_ok=True)
-    for f in chapter_dir.glob("chapter_*.txt"):
-        f.unlink()
-
-    lines = txt_path.read_text(errors="ignore").splitlines()
-    chapter_re = re.compile(r"^\s*Chapter\s+(\d+)\s*$", re.I)
-
-    chapters = []
-    current = None
-
-    for line in lines:
-        m = chapter_re.match(line)
-        if m:
-            num = int(m.group(1))
-            current = chapter_dir / f"chapter_{num:02d}.txt"
-            current.write_text(line + "\n", encoding="utf-8")
-            chapters.append((num, current))
-        elif current:
-            with current.open("a", encoding="utf-8") as out:
-                out.write(line + "\n")
-
-    if not chapters:
-        current = chapter_dir / "chapter_01.txt"
-        shutil.copy(txt_path, current)
-        chapters.append((1, current))
-
-    return chapters
-
 def convert(book):
     try:
         book = Path(book)
@@ -69,6 +42,7 @@ def convert(book):
         progress.set(0)
         status.set("Preparing book...")
 
+        prepare_book(book, txt_file)
 
         chapters = split_chapters(txt_file, chapter_dir)
         total = len(chapters)
