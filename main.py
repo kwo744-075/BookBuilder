@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess, threading, re, time
 
 from bookbuilder.engine import prepare_book, split_chapters
-from bookbuilder.voices import VOICE_MAP, DEFAULT_VOICE
+from bookbuilder.voices import VOICE_MAP, DEFAULT_VOICE, SPEED_MAP, DEFAULT_SPEED
 
 # Drag-and-drop is optional: if tkinterdnd2 isn't available the app still
 # runs normally and the Select Book button keeps working.
@@ -20,7 +20,6 @@ WORK = BASE / "_work_gui"
 PREVIEW = BASE / "previews"
 EDGE = Path.home() / "audiobook" / "venv" / "bin" / "edge-tts"
 
-RATE = "-10%"
 SAMPLE_TEXT = (
     "Thank you for choosing BookBuilder. "
     "Here is a sample sound of what your voice will sound like."
@@ -38,6 +37,7 @@ status = tk.StringVar(root, "Ready")
 progress = tk.IntVar(root, 0)
 pct_time = tk.StringVar(root, "")
 voice_choice = tk.StringVar(root, DEFAULT_VOICE)
+speed_choice = tk.StringVar(root, DEFAULT_SPEED)
 
 def clean_title(path):
     return re.sub(r"[^a-zA-Z0-9 _.-]", "", Path(path).stem).strip()
@@ -46,7 +46,7 @@ def fmt_time(seconds):
     seconds = int(seconds)
     return f"{seconds // 60}:{seconds % 60:02d}"
 
-def convert(book, voice):
+def convert(book, voice, rate):
     try:
         book = Path(book)
         title = clean_title(book)
@@ -76,7 +76,7 @@ def convert(book, voice):
                 result = subprocess.run([
                     str(EDGE),
                     "--voice", voice,
-                    f"--rate={RATE}",
+                    f"--rate={rate}",
                     "--file", str(chapter),
                     "--write-media", str(mp3)
                 ], capture_output=True, text=True)
@@ -123,11 +123,13 @@ def start():
         messagebox.showwarning("BookBuilder", "Pick a book first.")
         return
     voice = VOICE_MAP.get(voice_choice.get(), VOICE_MAP[DEFAULT_VOICE])
-    threading.Thread(target=convert, args=(book, voice), daemon=True).start()
+    rate = SPEED_MAP.get(speed_choice.get(), SPEED_MAP[DEFAULT_SPEED])
+    threading.Thread(target=convert, args=(book, voice, rate), daemon=True).start()
 
 def play_sample():
     voice_name = voice_choice.get()
     voice = VOICE_MAP.get(voice_name, VOICE_MAP[DEFAULT_VOICE])
+    rate = SPEED_MAP.get(speed_choice.get(), SPEED_MAP[DEFAULT_SPEED])
 
     def run():
         try:
@@ -140,7 +142,7 @@ def play_sample():
             result = subprocess.run([
                 str(EDGE),
                 "--voice", voice,
-                f"--rate={RATE}",
+                f"--rate={rate}",
                 "--file", str(sample_txt),
                 "--write-media", str(sample_mp3)
             ], capture_output=True, text=True)
@@ -173,11 +175,17 @@ if DND_AVAILABLE:
 
 tk.Button(root, text="Select Book", width=35, height=2, command=pick_book).pack(pady=6)
 
-tk.Label(root, text="Voice:").pack()
 voice_frame = tk.Frame(root)
 voice_frame.pack(pady=6)
+
+tk.Label(voice_frame, text="Speed:").pack(side="left")
+ttk.Combobox(voice_frame, textvariable=speed_choice, values=list(SPEED_MAP.keys()),
+             state="readonly", width=6).pack(side="left", padx=(2, 10))
+
+tk.Label(voice_frame, text="Voice:").pack(side="left")
 ttk.Combobox(voice_frame, textvariable=voice_choice, values=list(VOICE_MAP.keys()),
-             state="readonly", width=28).pack(side="left")
+             state="readonly", width=22).pack(side="left", padx=2)
+
 tk.Button(voice_frame, text="▶ Play Sample", command=play_sample).pack(side="left", padx=6)
 
 tk.Button(root, text="START CONVERSION", width=35, height=2, command=start).pack(pady=6)
