@@ -4,13 +4,13 @@ from pathlib import Path
 import subprocess, threading, re, time
 
 from bookbuilder.engine import prepare_book, split_chapters
+from bookbuilder.voices import VOICE_MAP, DEFAULT_VOICE
 
 BASE = Path.home() / "BookBuilder"
 OUT = BASE / "audiobooks"
 WORK = BASE / "_work_gui"
 EDGE = Path.home() / "audiobook" / "venv" / "bin" / "edge-tts"
 
-VOICE = "en-US-EricNeural"
 RATE = "-10%"
 
 OUT.mkdir(exist_ok=True)
@@ -24,6 +24,7 @@ selected_file = tk.StringVar(root, "No book selected")
 status = tk.StringVar(root, "Ready")
 progress = tk.IntVar(root, 0)
 pct_time = tk.StringVar(root, "")
+voice_choice = tk.StringVar(root, DEFAULT_VOICE)
 
 def clean_title(path):
     return re.sub(r"[^a-zA-Z0-9 _.-]", "", Path(path).stem).strip()
@@ -32,7 +33,7 @@ def fmt_time(seconds):
     seconds = int(seconds)
     return f"{seconds // 60}:{seconds % 60:02d}"
 
-def convert(book):
+def convert(book, voice):
     try:
         book = Path(book)
         title = clean_title(book)
@@ -61,7 +62,7 @@ def convert(book):
             if not mp3.exists() or mp3.stat().st_size < 10000:
                 result = subprocess.run([
                     str(EDGE),
-                    "--voice", VOICE,
+                    "--voice", voice,
                     f"--rate={RATE}",
                     "--file", str(chapter),
                     "--write-media", str(mp3)
@@ -101,7 +102,8 @@ def start():
     if book == "No book selected":
         messagebox.showwarning("BookBuilder", "Pick a book first.")
         return
-    threading.Thread(target=convert, args=(book,), daemon=True).start()
+    voice = VOICE_MAP.get(voice_choice.get(), VOICE_MAP[DEFAULT_VOICE])
+    threading.Thread(target=convert, args=(book, voice), daemon=True).start()
 
 def open_folder():
     subprocess.run(["xdg-open", str(OUT)])
@@ -111,6 +113,11 @@ tk.Label(root, text="BOOKBUILDER", font=("Arial", 30, "bold")).pack(pady=20)
 tk.Label(root, textvariable=selected_file, wraplength=700).pack(pady=10)
 
 tk.Button(root, text="Select Book", width=35, height=2, command=pick_book).pack(pady=6)
+
+tk.Label(root, text="Voice:").pack()
+ttk.Combobox(root, textvariable=voice_choice, values=list(VOICE_MAP.keys()),
+             state="readonly", width=33).pack(pady=6)
+
 tk.Button(root, text="START CONVERSION", width=35, height=2, command=start).pack(pady=6)
 
 ttk.Progressbar(root, orient="horizontal", length=560, mode="determinate",
