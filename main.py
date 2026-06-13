@@ -9,9 +9,14 @@ from bookbuilder.voices import VOICE_MAP, DEFAULT_VOICE
 BASE = Path.home() / "BookBuilder"
 OUT = BASE / "audiobooks"
 WORK = BASE / "_work_gui"
+PREVIEW = BASE / "previews"
 EDGE = Path.home() / "audiobook" / "venv" / "bin" / "edge-tts"
 
 RATE = "-10%"
+SAMPLE_TEXT = (
+    "Thank you for choosing BookBuilder. "
+    "Here is a sample sound of what your voice will sound like."
+)
 
 OUT.mkdir(exist_ok=True)
 WORK.mkdir(exist_ok=True)
@@ -105,6 +110,39 @@ def start():
     voice = VOICE_MAP.get(voice_choice.get(), VOICE_MAP[DEFAULT_VOICE])
     threading.Thread(target=convert, args=(book, voice), daemon=True).start()
 
+def play_sample():
+    voice_name = voice_choice.get()
+    voice = VOICE_MAP.get(voice_name, VOICE_MAP[DEFAULT_VOICE])
+
+    def run():
+        try:
+            PREVIEW.mkdir(parents=True, exist_ok=True)
+            sample_txt = PREVIEW / "sample.txt"
+            sample_txt.write_text(SAMPLE_TEXT, encoding="utf-8")
+            sample_mp3 = PREVIEW / f"{voice_name}.mp3"
+
+            status.set(f"Generating {voice_name} sample...")
+            result = subprocess.run([
+                str(EDGE),
+                "--voice", voice,
+                f"--rate={RATE}",
+                "--file", str(sample_txt),
+                "--write-media", str(sample_mp3)
+            ], capture_output=True, text=True)
+
+            if result.returncode != 0:
+                raise RuntimeError(result.stderr or result.stdout or "edge-tts failed")
+
+            status.set(f"Playing {voice_name} sample...")
+            subprocess.run(["xdg-open", str(sample_mp3)])
+            status.set("Ready")
+
+        except Exception as e:
+            status.set("Error")
+            messagebox.showerror("BookBuilder Error", str(e))
+
+    threading.Thread(target=run, daemon=True).start()
+
 def open_folder():
     subprocess.run(["xdg-open", str(OUT)])
 
@@ -115,8 +153,11 @@ tk.Label(root, textvariable=selected_file, wraplength=700).pack(pady=10)
 tk.Button(root, text="Select Book", width=35, height=2, command=pick_book).pack(pady=6)
 
 tk.Label(root, text="Voice:").pack()
-ttk.Combobox(root, textvariable=voice_choice, values=list(VOICE_MAP.keys()),
-             state="readonly", width=33).pack(pady=6)
+voice_frame = tk.Frame(root)
+voice_frame.pack(pady=6)
+ttk.Combobox(voice_frame, textvariable=voice_choice, values=list(VOICE_MAP.keys()),
+             state="readonly", width=28).pack(side="left")
+tk.Button(voice_frame, text="▶ Play Sample", command=play_sample).pack(side="left", padx=6)
 
 tk.Button(root, text="START CONVERSION", width=35, height=2, command=start).pack(pady=6)
 
