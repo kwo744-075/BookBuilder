@@ -17,7 +17,16 @@
       "Bash(python3 -m pip install --user --break-system-packages tkinterdnd2)",
       "Bash(git tag *)",
       "Bash(/home/mac/audiobook/venv/bin/edge-tts --list-voices)",
-      "Bash(awk '{print $1, $2}')"
+      "Bash(awk '{print $1, $2}')",
+      "Bash(gh auth *)",
+      "Bash(grep -iE \"audiobooks/|_work_gui/|previews/|\\\\.mp3$\")",
+      "Bash(grep -zE \"audiobooks/|_work_gui/|\\\\.mp3$\")",
+      "Bash(xargs -0 du -ch)",
+      "Bash(xargs -0 du -h)",
+      "Bash(xargs -0 du -m)",
+      "Bash(awk '$1>=100{print $0; f=1} END{if\\(!f\\) print \"none — all under 100MB, safe to push\"}')",
+      "Bash(gh repo *)",
+      "Bash(git push *)"
     ]
   }
 }

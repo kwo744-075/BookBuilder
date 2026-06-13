@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, ttk, simpledialog
 from pathlib import Path
 import subprocess, threading, re, time
 
@@ -32,7 +32,7 @@ root = TkinterDnD.Tk() if DND_AVAILABLE else tk.Tk()
 root.title("BookBuilder")
 root.geometry("760x660")
 
-book_queue = []        # pending book paths, processed top-to-bottom
+book_queue = []        # list of (source_path, output_name), processed top-to-bottom
 queue_running = False  # guard so the queue can't be started twice
 status = tk.StringVar(root, "Ready")
 progress = tk.IntVar(root, 0)
@@ -43,18 +43,22 @@ speed_choice = tk.StringVar(root, DEFAULT_SPEED)
 books_done = 0
 converted = tk.StringVar(root, "Books converted: 0")
 
+def sanitize(name):
+    # Keep filesystem-safe characters only; used for output folder names.
+    return re.sub(r"[^a-zA-Z0-9 _.-]", "", name).strip()
+
 def clean_title(path):
-    return re.sub(r"[^a-zA-Z0-9 _.-]", "", Path(path).stem).strip()
+    return sanitize(Path(path).stem)
 
 def fmt_time(seconds):
     seconds = int(seconds)
     return f"{seconds // 60}:{seconds % 60:02d}"
 
-def convert(book, voice, rate, notify=True):
+def convert(book, voice, rate, out_name, notify=True):
     global books_done
     try:
         book = Path(book)
-        title = clean_title(book)
+        title = sanitize(out_name) or clean_title(book)
         out_dir = OUT / title
         work_dir = WORK / title
         chapter_dir = work_dir / "chapters"
@@ -110,9 +114,32 @@ def convert(book, voice, rate, notify=True):
         messagebox.showerror("BookBuilder Error", str(e))
 
 def enqueue(path):
-    book_queue.append(path)
-    book_list.insert("end", Path(path).name)
-    status.set(f"{len(book_queue)} book(s) in queue. Click START QUEUE.")
+    out_name = clean_title(path)  # default; user can change via Save As
+    book_queue.append((path, out_name))
+    book_list.insert("end", out_name)
+    status.set(f"{len(book_queue)} book(s) in queue. Use Save As to rename, then START QUEUE.")
+
+def save_as():
+    if queue_running:
+        return
+    sel = book_list.curselection()
+    if not sel:
+        messagebox.showinfo("BookBuilder", "Select a book in the queue first.")
+        return
+    i = sel[0]
+    path, out_name = book_queue[i]
+    new_name = simpledialog.askstring(
+        "Save book as", "Output name for this book:", initialvalue=out_name)
+    if new_name is None:
+        return
+    new_name = sanitize(new_name)
+    if not new_name:
+        messagebox.showwarning("BookBuilder", "Please enter a valid name.")
+        return
+    book_queue[i] = (path, new_name)
+    book_list.delete(i)
+    book_list.insert(i, new_name)
+    book_list.selection_set(i)
 
 def add_books():
     filenames = filedialog.askopenfilenames(
@@ -151,10 +178,10 @@ def run_queue(voice, rate):
     done = 0
     try:
         while book_queue:
-            book = book_queue[0]
+            book, out_name = book_queue[0]
             done += 1
-            status.set(f"Book {done} ({len(book_queue)} left): {Path(book).stem}")
-            convert(book, voice, rate, notify=False)
+            status.set(f"Book {done} ({len(book_queue)} left): {out_name}")
+            convert(book, voice, rate, out_name, notify=False)
             book_queue.pop(0)
             book_list.delete(0)
         status.set(f"Queue finished! {done} book(s) done.")
@@ -202,7 +229,7 @@ def open_folder():
 
 tk.Label(root, text="BOOKBUILDER", font=("Arial", 30, "bold")).pack(pady=20)
 
-tk.Label(root, text="Queue (converted one after another):").pack(pady=(6, 2))
+tk.Label(root, text="Queue — output names (select one, then Save As to rename):").pack(pady=(6, 2))
 book_list = tk.Listbox(root, width=72, height=6)
 book_list.pack()
 
@@ -214,8 +241,10 @@ if DND_AVAILABLE:
 
 queue_btns = tk.Frame(root)
 queue_btns.pack(pady=6)
-tk.Button(queue_btns, text="Add Book(s)", width=20, height=2,
+tk.Button(queue_btns, text="Add Book(s)", width=16, height=2,
           command=add_books).pack(side="left", padx=4)
+tk.Button(queue_btns, text="Save As…", width=14, height=2,
+          command=save_as).pack(side="left", padx=4)
 tk.Button(queue_btns, text="Clear Queue", width=14, height=2,
           command=clear_queue).pack(side="left", padx=4)
 
