@@ -30,9 +30,10 @@ WORK.mkdir(exist_ok=True)
 
 root = TkinterDnD.Tk() if DND_AVAILABLE else tk.Tk()
 root.title("BookBuilder")
-root.geometry("760x560")
+root.geometry("760x660")
 
-selected_file = tk.StringVar(root, "No book selected")
+book_queue = []        # pending book paths, processed top-to-bottom
+queue_running = False  # guard so the queue can't be started twice
 status = tk.StringVar(root, "Ready")
 progress = tk.IntVar(root, 0)
 pct_time = tk.StringVar(root, "")
@@ -49,7 +50,7 @@ def fmt_time(seconds):
     seconds = int(seconds)
     return f"{seconds // 60}:{seconds % 60:02d}"
 
-def convert(book, voice, rate):
+def convert(book, voice, rate, notify=True):
     global books_done
     try:
         book = Path(book)
@@ -100,37 +101,67 @@ def convert(book, voice, rate):
         pct_time.set(f"100%  •  done in {fmt_time(time.time() - start_time)}")
         books_done += 1
         converted.set(f"Books converted: {books_done}")
-        messagebox.showinfo("BookBuilder", f"Done!\n\nSaved to:\n{out_dir}")
-        subprocess.run(["xdg-open", str(out_dir)])
+        if notify:
+            messagebox.showinfo("BookBuilder", f"Done!\n\nSaved to:\n{out_dir}")
+            subprocess.run(["xdg-open", str(out_dir)])
 
     except Exception as e:
         status.set("Error")
         messagebox.showerror("BookBuilder Error", str(e))
 
-def pick_book():
-    filename = filedialog.askopenfilename(
-        title="Select Book",
+def enqueue(path):
+    book_queue.append(path)
+    book_list.insert("end", Path(path).name)
+    status.set(f"{len(book_queue)} book(s) in queue. Click START QUEUE.")
+
+def add_books():
+    filenames = filedialog.askopenfilenames(
+        title="Select Book(s)",
         filetypes=[("Books", "*.pdf *.docx *.txt *.epub"), ("All Files", "*.*")]
     )
-    if filename:
-        selected_file.set(filename)
-        status.set("Book selected. Click START CONVERSION.")
+    for f in filenames:
+        enqueue(f)
 
 def on_drop(event):
-    paths = root.tk.splitlist(event.data)
-    if not paths:
-        return
-    selected_file.set(paths[0])
-    status.set("Book selected. Click START CONVERSION.")
+    for path in root.tk.splitlist(event.data):
+        enqueue(path)
 
-def start():
-    book = selected_file.get()
-    if book == "No book selected":
-        messagebox.showwarning("BookBuilder", "Pick a book first.")
+def clear_queue():
+    if queue_running:
+        return
+    book_queue.clear()
+    book_list.delete(0, "end")
+    status.set("Queue cleared.")
+
+def start_queue():
+    global queue_running
+    if queue_running:
+        return
+    if not book_queue:
+        messagebox.showwarning("BookBuilder", "Add at least one book first.")
         return
     voice = VOICE_MAP.get(voice_choice.get(), VOICE_MAP[DEFAULT_VOICE])
     rate = SPEED_MAP.get(speed_choice.get(), SPEED_MAP[DEFAULT_SPEED])
-    threading.Thread(target=convert, args=(book, voice, rate), daemon=True).start()
+    queue_running = True
+    threading.Thread(target=run_queue, args=(voice, rate), daemon=True).start()
+
+def run_queue(voice, rate):
+    # One worker drains the queue top-to-bottom, so books never overlap.
+    global queue_running
+    done = 0
+    try:
+        while book_queue:
+            book = book_queue[0]
+            done += 1
+            status.set(f"Book {done} ({len(book_queue)} left): {Path(book).stem}")
+            convert(book, voice, rate, notify=False)
+            book_queue.pop(0)
+            book_list.delete(0)
+        status.set(f"Queue finished! {done} book(s) done.")
+        messagebox.showinfo("BookBuilder", f"Queue complete!\n\n{done} book(s) converted.")
+        subprocess.run(["xdg-open", str(OUT)])
+    finally:
+        queue_running = False
 
 def play_sample():
     voice_name = voice_choice.get()
@@ -171,15 +202,22 @@ def open_folder():
 
 tk.Label(root, text="BOOKBUILDER", font=("Arial", 30, "bold")).pack(pady=20)
 
-tk.Label(root, textvariable=selected_file, wraplength=700).pack(pady=10)
+tk.Label(root, text="Queue (converted one after another):").pack(pady=(6, 2))
+book_list = tk.Listbox(root, width=72, height=6)
+book_list.pack()
 
 if DND_AVAILABLE:
-    tk.Label(root, text="(or drag & drop a book anywhere on this window)",
+    tk.Label(root, text="(or drag & drop book(s) anywhere on this window)",
              fg="gray").pack()
     root.drop_target_register(DND_FILES)
     root.dnd_bind("<<Drop>>", on_drop)
 
-tk.Button(root, text="Select Book", width=35, height=2, command=pick_book).pack(pady=6)
+queue_btns = tk.Frame(root)
+queue_btns.pack(pady=6)
+tk.Button(queue_btns, text="Add Book(s)", width=20, height=2,
+          command=add_books).pack(side="left", padx=4)
+tk.Button(queue_btns, text="Clear Queue", width=14, height=2,
+          command=clear_queue).pack(side="left", padx=4)
 
 voice_frame = tk.Frame(root)
 voice_frame.pack(pady=6)
@@ -194,7 +232,7 @@ ttk.Combobox(voice_frame, textvariable=voice_choice, values=list(VOICE_MAP.keys(
 
 tk.Button(voice_frame, text="▶ Play Sample", command=play_sample).pack(side="left", padx=6)
 
-tk.Button(root, text="START CONVERSION", width=35, height=2, command=start).pack(pady=6)
+tk.Button(root, text="START QUEUE", width=35, height=2, command=start_queue).pack(pady=6)
 
 ttk.Progressbar(root, orient="horizontal", length=560, mode="determinate",
                 variable=progress, maximum=100).pack(pady=(20, 4))
