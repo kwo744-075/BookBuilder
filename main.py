@@ -39,6 +39,9 @@ pct_time = tk.StringVar(root, "")
 voice_choice = tk.StringVar(root, DEFAULT_VOICE)
 speed_choice = tk.StringVar(root, DEFAULT_SPEED)
 
+books_done = 0
+converted = tk.StringVar(root, "Books converted: 0")
+
 def clean_title(path):
     return re.sub(r"[^a-zA-Z0-9 _.-]", "", Path(path).stem).strip()
 
@@ -47,6 +50,7 @@ def fmt_time(seconds):
     return f"{seconds // 60}:{seconds % 60:02d}"
 
 def convert(book, voice, rate):
+    global books_done
     try:
         book = Path(book)
         title = clean_title(book)
@@ -94,6 +98,8 @@ def convert(book, voice, rate):
 
         status.set("Finished!")
         pct_time.set(f"100%  •  done in {fmt_time(time.time() - start_time)}")
+        books_done += 1
+        converted.set(f"Books converted: {books_done}")
         messagebox.showinfo("BookBuilder", f"Done!\n\nSaved to:\n{out_dir}")
         subprocess.run(["xdg-open", str(out_dir)])
 
@@ -199,5 +205,11 @@ tk.Label(root, textvariable=status, font=("Arial", 12)).pack(pady=10)
 
 tk.Button(root, text="Open Audiobooks Folder", width=35, height=2, command=open_folder).pack(pady=6)
 tk.Button(root, text="Exit", width=35, height=2, command=root.destroy).pack(pady=6)
+
+# Corner overlays (place() so they don't disturb the packed layout above)
+tk.Label(root, textvariable=converted, fg="gray").place(relx=1.0, rely=0.0,
+                                                         anchor="ne", x=-10, y=8)
+tk.Label(root, text="v1.0", fg="gray").place(relx=1.0, rely=1.0,
+                                             anchor="se", x=-10, y=-8)
 
 root.mainloop()
