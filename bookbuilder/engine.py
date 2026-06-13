@@ -2,6 +2,8 @@ import re
 import shutil
 from pathlib import Path
 
+from .pdf import pdf_to_text
+
 
 def prepare_book(src_path, txt_file):
     """Copy the selected book into its work folder as plain text (book.txt).
@@ -13,12 +15,15 @@ def prepare_book(src_path, txt_file):
     txt_file = Path(txt_file)
     txt_file.parent.mkdir(parents=True, exist_ok=True)
 
-    if src_path.suffix.lower() == ".txt":
+    suffix = src_path.suffix.lower()
+    if suffix == ".txt":
         shutil.copy(src_path, txt_file)
+    elif suffix == ".pdf":
+        pdf_to_text(src_path, txt_file)
     else:
         raise RuntimeError(
             f"Unsupported book format: '{src_path.suffix}'. "
-            "Please select a .txt file."
+            "Please select a .txt or .pdf file."
         )
 
     return txt_file

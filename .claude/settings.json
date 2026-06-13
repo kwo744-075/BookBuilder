@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(pdftotext -v)",
+      "Bash(python3 -m pip --version)",
+      "Bash(python3 -c \"import ast; [ast.parse\\(open\\(f\\).read\\(\\)\\) for f in ['main.py','bookbuilder/engine.py','bookbuilder/pdf.py']]; print\\('syntax OK'\\)\")",
+      "Bash(python3 -c \"from bookbuilder.engine import prepare_book, split_chapters; from bookbuilder.pdf import pdf_to_text; print\\('imports OK'\\)\")",
+      "Bash(SAMPLE=$\\(find /usr/share /home/mac -maxdepth 4 -iname '*.pdf' 2>/dev/null | head -1\\); echo \"sample: $SAMPLE\"; python3 -c \" *)",
+      "Read(//usr/share/**)"
     ]
   }
 }

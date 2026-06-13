@@ -76,7 +76,7 @@ def convert(book):
 def pick_book():
     filename = filedialog.askopenfilename(
         title="Select Book",
-        filetypes=[("Books", "*.epub *.txt"), ("All Files", "*.*")]
+        filetypes=[("Books", "*.pdf *.txt *.epub"), ("All Files", "*.*")]
     )
     if filename:
         selected_file.set(filename)

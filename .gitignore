@@ -1,2 +1,9 @@
 __pycache__/
 *.pyc
+
+# Generated output / work folders (not source)
+audiobooks/
+_work_gui/
+output/
+temp/
+previews/
