@@ -10,7 +10,10 @@
       "Bash(SAMPLE=$\\(find /usr/share /home/mac -maxdepth 4 -iname '*.pdf' 2>/dev/null | head -1\\); echo \"sample: $SAMPLE\"; python3 -c \" *)",
       "Read(//usr/share/**)",
       "Bash(python3 -c \"import ast; ast.parse\\(open\\('main.py'\\).read\\(\\)\\); print\\('syntax OK'\\)\")",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"import tkinterdnd2; print\\('tkinterdnd2', getattr\\(tkinterdnd2,'__version__','\\(ok\\)'\\)\\)\")",
+      "Read(//usr/**)",
+      "Bash(python3 -m pip install --user tkinterdnd2)"
     ]
   }
 }

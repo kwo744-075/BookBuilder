@@ -6,6 +6,14 @@ import subprocess, threading, re, time
 from bookbuilder.engine import prepare_book, split_chapters
 from bookbuilder.voices import VOICE_MAP, DEFAULT_VOICE
 
+# Drag-and-drop is optional: if tkinterdnd2 isn't available the app still
+# runs normally and the Select Book button keeps working.
+try:
+    from tkinterdnd2 import TkinterDnD, DND_FILES
+    DND_AVAILABLE = True
+except ImportError:
+    DND_AVAILABLE = False
+
 BASE = Path.home() / "BookBuilder"
 OUT = BASE / "audiobooks"
 WORK = BASE / "_work_gui"
@@ -21,7 +29,7 @@ SAMPLE_TEXT = (
 OUT.mkdir(exist_ok=True)
 WORK.mkdir(exist_ok=True)
 
-root = tk.Tk()
+root = TkinterDnD.Tk() if DND_AVAILABLE else tk.Tk()
 root.title("BookBuilder")
 root.geometry("760x560")
 
@@ -102,6 +110,13 @@ def pick_book():
         selected_file.set(filename)
         status.set("Book selected. Click START CONVERSION.")
 
+def on_drop(event):
+    paths = root.tk.splitlist(event.data)
+    if not paths:
+        return
+    selected_file.set(paths[0])
+    status.set("Book selected. Click START CONVERSION.")
+
 def start():
     book = selected_file.get()
     if book == "No book selected":
@@ -149,6 +164,12 @@ def open_folder():
 tk.Label(root, text="BOOKBUILDER", font=("Arial", 30, "bold")).pack(pady=20)
 
 tk.Label(root, textvariable=selected_file, wraplength=700).pack(pady=10)
+
+if DND_AVAILABLE:
+    tk.Label(root, text="(or drag & drop a book anywhere on this window)",
+             fg="gray").pack()
+    root.drop_target_register(DND_FILES)
+    root.dnd_bind("<<Drop>>", on_drop)
 
 tk.Button(root, text="Select Book", width=35, height=2, command=pick_book).pack(pady=6)
 
