@@ -96,7 +96,7 @@ def convert(book, voice):
 def pick_book():
     filename = filedialog.askopenfilename(
         title="Select Book",
-        filetypes=[("Books", "*.pdf *.txt *.epub"), ("All Files", "*.*")]
+        filetypes=[("Books", "*.pdf *.docx *.txt *.epub"), ("All Files", "*.*")]
     )
     if filename:
         selected_file.set(filename)
