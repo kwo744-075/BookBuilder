@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from pathlib import Path
-import subprocess, threading, re
+import subprocess, threading, re, time
 
 from bookbuilder.engine import prepare_book, split_chapters
 
@@ -23,9 +23,14 @@ root.geometry("760x560")
 selected_file = tk.StringVar(root, "No book selected")
 status = tk.StringVar(root, "Ready")
 progress = tk.IntVar(root, 0)
+pct_time = tk.StringVar(root, "")
 
 def clean_title(path):
     return re.sub(r"[^a-zA-Z0-9 _.-]", "", Path(path).stem).strip()
+
+def fmt_time(seconds):
+    seconds = int(seconds)
+    return f"{seconds // 60}:{seconds % 60:02d}"
 
 def convert(book):
     try:
@@ -40,12 +45,14 @@ def convert(book):
         work_dir.mkdir(parents=True, exist_ok=True)
 
         progress.set(0)
+        pct_time.set("0%  •  0:00 elapsed")
         status.set("Preparing book...")
 
         prepare_book(book, txt_file)
 
         chapters = split_chapters(txt_file, chapter_dir)
         total = len(chapters)
+        start_time = time.time()
 
         for idx, (num, chapter) in enumerate(chapters, start=1):
             mp3 = out_dir / f"{num:02d} - Chapter {num}.mp3"
@@ -65,7 +72,14 @@ def convert(book):
 
             progress.set(int(idx / total * 100))
 
+            elapsed = time.time() - start_time
+            eta = elapsed / idx * (total - idx)
+            pct_time.set(
+                f"{int(idx / total * 100)}%  •  {fmt_time(elapsed)} elapsed  •  ~{fmt_time(eta)} left"
+            )
+
         status.set("Finished!")
+        pct_time.set(f"100%  •  done in {fmt_time(time.time() - start_time)}")
         messagebox.showinfo("BookBuilder", f"Done!\n\nSaved to:\n{out_dir}")
         subprocess.run(["xdg-open", str(out_dir)])
 
@@ -100,7 +114,9 @@ tk.Button(root, text="Select Book", width=35, height=2, command=pick_book).pack(
 tk.Button(root, text="START CONVERSION", width=35, height=2, command=start).pack(pady=6)
 
 ttk.Progressbar(root, orient="horizontal", length=560, mode="determinate",
-                variable=progress, maximum=100).pack(pady=20)
+                variable=progress, maximum=100).pack(pady=(20, 4))
+
+tk.Label(root, textvariable=pct_time, font=("Arial", 11)).pack()
 
 tk.Label(root, textvariable=status, font=("Arial", 12)).pack(pady=10)
 
