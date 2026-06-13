@@ -13,7 +13,9 @@
       "Bash(python3 -c ' *)",
       "Bash(python3 -c \"import tkinterdnd2; print\\('tkinterdnd2', getattr\\(tkinterdnd2,'__version__','\\(ok\\)'\\)\\)\")",
       "Read(//usr/**)",
-      "Bash(python3 -m pip install --user tkinterdnd2)"
+      "Bash(python3 -m pip install --user tkinterdnd2)",
+      "Bash(python3 -m pip install --user --break-system-packages tkinterdnd2)",
+      "Bash(git tag *)"
     ]
   }
 }
