@@ -4,6 +4,15 @@ All notable changes to BookBuilder are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-06-14
+
+First packaged & distributed release. Same application as 1.0.0, now shipped as
+Windows and Linux installers built via CI.
+
+### Added
+- Windows installer (Inno Setup) and Linux `.deb` + AppImage published as
+  GitHub Release assets through the automated workflow.
+
 ## [1.0.0] - 2026-06-14
 
 ### Added
