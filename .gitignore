@@ -15,3 +15,4 @@ releases/*.zip
 releases/*.deb
 releases/*.AppImage
 releases/RELEASE_NOTES-*.md
+backup/TextBooks/
