@@ -16,3 +16,10 @@ releases/*.deb
 releases/*.AppImage
 releases/RELEASE_NOTES-*.md
 backup/TextBooks/
+
+# Legacy / local-only clutter (kept on disk, not in repo)
+archive/
+backup/
+config/
+preview.txt
+releases/*.py

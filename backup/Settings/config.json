@@ -1,9 +1,0 @@
-{
-    "voice": "en-US-EricNeural",
-    "rate": "-10%",
-    "volume": "+0%",
-    "resume": true,
-    "skip_front_matter": true,
-    "output_format": "mp3",
-    "output_directory": "~/BookBuilder/Audiobooks"
-}
