@@ -69,5 +69,8 @@ bash    installer/linux/build_appimage.sh  # AppImage (Linux)
 Windows installers and tagged releases are built automatically by
 [GitHub Actions](.github/workflows/release.yml) on a `v*` tag.
 
+## Author
+Kelly O
+
 ## License
-See repository.
+MIT — see [LICENSE](LICENSE).
