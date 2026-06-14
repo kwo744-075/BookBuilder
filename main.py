@@ -1,10 +1,13 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk, simpledialog
 from pathlib import Path
-import subprocess, threading, re, time
+import threading, re, time
 
 from bookbuilder.engine import prepare_book, split_chapters
 from bookbuilder.voices import VOICE_MAP, DEFAULT_VOICE, SPEED_MAP, DEFAULT_SPEED
+from bookbuilder.tts import synthesize_file
+from bookbuilder.desktop import open_path
+from bookbuilder.version import __version__
 
 # Drag-and-drop is optional: if tkinterdnd2 isn't available the app still
 # runs normally and the Select Book button keeps working.
@@ -18,7 +21,6 @@ BASE = Path.home() / "BookBuilder"
 OUT = BASE / "audiobooks"
 WORK = BASE / "_work_gui"
 PREVIEW = BASE / "previews"
-EDGE = Path.home() / "audiobook" / "venv" / "bin" / "edge-tts"
 
 SAMPLE_TEXT = (
     "Thank you for choosing BookBuilder. "
@@ -82,16 +84,7 @@ def convert(book, voice, rate, out_name, notify=True):
             status.set(f"Creating Chapter {num} of {total}...")
 
             if not mp3.exists() or mp3.stat().st_size < 10000:
-                result = subprocess.run([
-                    str(EDGE),
-                    "--voice", voice,
-                    f"--rate={rate}",
-                    "--file", str(chapter),
-                    "--write-media", str(mp3)
-                ], capture_output=True, text=True)
-
-                if result.returncode != 0:
-                    raise RuntimeError(result.stderr or result.stdout or "edge-tts failed")
+                synthesize_file(chapter, voice, rate, mp3)
 
             progress.set(int(idx / total * 100))
 
@@ -107,7 +100,7 @@ def convert(book, voice, rate, out_name, notify=True):
         converted.set(f"Books converted: {books_done}")
         if notify:
             messagebox.showinfo("BookBuilder", f"Done!\n\nSaved to:\n{out_dir}")
-            subprocess.run(["xdg-open", str(out_dir)])
+            open_path(out_dir)
 
     except Exception as e:
         status.set("Error")
@@ -186,7 +179,7 @@ def run_queue(voice, rate):
             book_list.delete(0)
         status.set(f"Queue finished! {done} book(s) done.")
         messagebox.showinfo("BookBuilder", f"Queue complete!\n\n{done} book(s) converted.")
-        subprocess.run(["xdg-open", str(OUT)])
+        open_path(OUT)
     finally:
         queue_running = False
 
@@ -203,19 +196,10 @@ def play_sample():
             sample_mp3 = PREVIEW / f"{voice_name}.mp3"
 
             status.set(f"Generating {voice_name} sample...")
-            result = subprocess.run([
-                str(EDGE),
-                "--voice", voice,
-                f"--rate={rate}",
-                "--file", str(sample_txt),
-                "--write-media", str(sample_mp3)
-            ], capture_output=True, text=True)
-
-            if result.returncode != 0:
-                raise RuntimeError(result.stderr or result.stdout or "edge-tts failed")
+            synthesize_file(sample_txt, voice, rate, sample_mp3)
 
             status.set(f"Playing {voice_name} sample...")
-            subprocess.run(["xdg-open", str(sample_mp3)])
+            open_path(sample_mp3)
             status.set("Ready")
 
         except Exception as e:
@@ -225,7 +209,7 @@ def play_sample():
     threading.Thread(target=run, daemon=True).start()
 
 def open_folder():
-    subprocess.run(["xdg-open", str(OUT)])
+    open_path(OUT)
 
 tk.Label(root, text="BOOKBUILDER", font=("Arial", 30, "bold")).pack(pady=20)
 
@@ -276,7 +260,7 @@ tk.Button(root, text="Exit", width=35, height=2, command=root.destroy).pack(pady
 # Corner overlays (place() so they don't disturb the packed layout above)
 tk.Label(root, textvariable=converted, fg="gray").place(relx=1.0, rely=0.0,
                                                          anchor="ne", x=-10, y=8)
-tk.Label(root, text="v1.0", fg="gray").place(relx=1.0, rely=1.0,
-                                             anchor="se", x=-10, y=-8)
+tk.Label(root, text=f"v{__version__}", fg="gray").place(relx=1.0, rely=1.0,
+                                                        anchor="se", x=-10, y=-8)
 
 root.mainloop()
