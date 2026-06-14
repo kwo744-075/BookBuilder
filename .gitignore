@@ -7,3 +7,8 @@ _work_gui/
 output/
 temp/
 previews/
+
+# Build artifacts (PyInstaller) and packaged releases
+build/
+dist/
+releases/*.zip
