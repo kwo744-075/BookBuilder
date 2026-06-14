@@ -12,3 +12,5 @@ previews/
 build/
 dist/
 releases/*.zip
+releases/*.deb
+releases/*.AppImage

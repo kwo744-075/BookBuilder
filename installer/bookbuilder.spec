@@ -50,6 +50,7 @@ exe = EXE(
     name="BookBuilder",
     console=False,          # GUI app: no terminal window
     disable_windowed_traceback=False,
+    icon=os.path.join(ROOT, "assets", "bookbuilder.ico"),  # used on Windows
 )
 
 coll = COLLECT(
