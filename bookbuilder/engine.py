@@ -4,6 +4,7 @@ from pathlib import Path
 
 from .pdf import pdf_to_text
 from .docx import docx_to_text
+from .epub import epub_to_text
 
 
 def prepare_book(src_path, txt_file):
@@ -23,10 +24,12 @@ def prepare_book(src_path, txt_file):
         pdf_to_text(src_path, txt_file)
     elif suffix == ".docx":
         docx_to_text(src_path, txt_file)
+    elif suffix == ".epub":
+        epub_to_text(src_path, txt_file)
     else:
         raise RuntimeError(
             f"Unsupported book format: '{src_path.suffix}'. "
-            "Please select a .txt, .pdf, or .docx file."
+            "Please select a .txt, .pdf, .docx, or .epub file."
         )
 
     return txt_file
